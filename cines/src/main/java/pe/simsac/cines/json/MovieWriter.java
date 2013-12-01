@@ -37,76 +37,57 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-package pe.simsac.cines.client;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
+package pe.simsac.cines.json;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+
+import javax.json.Json;
+import javax.json.stream.JsonGenerator;
+import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Provider;
 
 import pe.simsac.cines.entities.Movie;
-import pe.simsac.cines.json.MovieWriter;
 
 /**
  * @author Arun Gupta
  */
-@Named
-@RequestScoped
-public class MovieClientBean {
+@Provider
+@Produces(MediaType.APPLICATION_JSON)
+public class MovieWriter implements MessageBodyWriter<Movie> {
 
-	@Inject
-	MovieBackingBean bean;
-
-	Client client;
-	WebTarget target;
-
-	@PostConstruct
-	public void init() {
-		client = ClientBuilder.newClient();
-		target = client
-				.target("http://localhost:8080/cines/webresources/movie/");
-	}
-
-	@PreDestroy
-	public void destroy() {
-		client.close();
-	}
-
-	public Movie[] getMovies() {
-		return target.request().get(Movie[].class);
-	}
-
-	public Movie getMovie() {
-		Movie m = target.path("{movie}")
-				.resolveTemplate("movie", 
-						bean.getMovieId()).request()
-				.get(Movie.class);
-		return m;
-	}
-	
-    public void deleteMovie() {
-        target
-                .path("{movieId}")
-                .resolveTemplate("movieId", bean.getMovieId())
-                .request()
-                .delete();
+    @Override
+    public boolean isWriteable(Class<?> type, Type type1, Annotation[] antns, MediaType mt) {
+        return Movie.class.isAssignableFrom(type);
     }
-    
-    public void addMovie() {
-        Movie m = new Movie();
-        m.setId(bean.getMovieId());
-        m.setName(bean.getMovieName());
-        m.setActors(bean.getActors());
-        target
-                .register(MovieWriter.class)
-                .request()
-                .post(Entity.entity(m, MediaType.APPLICATION_JSON));
+
+    @Override
+    public long getSize(Movie t, Class<?> type, Type type1, Annotation[] antns, MediaType mt) {
+        // As of JAX-RS 2.0, the method has been deprecated and the 
+        // value returned by the method is ignored by a JAX-RS runtime. 
+        // All MessageBodyWriter implementations are advised to return -1 from 
+        // the method.
+        
+        return -1;
+    }
+
+    @Override
+    public void writeTo(Movie t, Class<?> type, Type type1, Annotation[] antns, MediaType mt, MultivaluedMap<String, Object> mm, OutputStream out) throws IOException, WebApplicationException {
+        JsonGenerator gen = Json.createGenerator(out);
+        gen.writeStartObject()
+                .write("id", t.getId())
+                .write("name", t.getName())
+                .write("actors", t.getActors())
+                .writeEnd();
+        gen.flush();
+
     }
 
 }
