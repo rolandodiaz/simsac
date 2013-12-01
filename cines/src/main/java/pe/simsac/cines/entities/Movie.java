@@ -126,6 +126,8 @@ public class Movie implements Serializable {
     public void setShowTimingCollection(Collection<ShowTiming> showTimingCollection) {
         this.showTimingCollection = showTimingCollection;
     }
+    
+    
 
     @Override
     public int hashCode() {
