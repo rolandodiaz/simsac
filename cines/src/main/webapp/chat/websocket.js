@@ -1,5 +1,3 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<!-- 
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
@@ -39,22 +37,61 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
--->
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
 
-    <body>
-		
-		<ui:composition template="./WEB-INF/template.xhtml">
-		
-			<ui:define name="content">
-				Brindando #{movieFacadeREST.countREST()}
-				 peliculas en #{theaterFacadeREST.countREST()} salas!
-			</ui:define>
-		
-		</ui:composition>
-     
+var wsUri = 'ws://' + document.location.host 
+        + document.location.pathname.substr(0, document.location.pathname.indexOf("/faces"))
+        + '/websocket';
+console.log(wsUri);
+var websocket = new WebSocket(wsUri);
 
-    </body>
-</html>
+var username;
+websocket.onopen = function(evt) { onOpen(evt); };
+websocket.onmessage = function(evt) { onMessage(evt); };
+websocket.onerror = function(evt) { onError(evt); };
+websocket.onclose = function(evt) { onClose(evt); };
+var output = document.getElementById("output");
+var textField = document.getElementById("textField");
+var users = document.getElementById("users");
+var chatlog = document.getElementById("chatlog");
+
+function join() {
+    username = textField.value;
+    websocket.send(username + " joined");
+}
+
+function send_message() {
+    websocket.send(username + ": " + textField.value);
+}
+
+function onOpen() {
+    writeToScreen("CONNECTED");
+}
+
+function onClose() {
+    writeToScreen("DISCONNECTED");
+}
+
+function onMessage(evt) {
+    writeToScreen("RECEIVED: " + evt.data);
+    if (evt.data.indexOf("joined") !== -1) {
+        users.innerHTML += evt.data.substring(0, evt.data.indexOf(" joined")) + "\n";
+    } else {
+        chatlog.innerHTML += evt.data + "\n";
+    }
+}
+
+function onError(evt) {
+    writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+}
+
+function disconnect() {
+    websocket.close();
+}
+
+function writeToScreen(message) {
+    var pre = document.createElement("p");
+    pre.style.wordWrap = "break-word";
+    pre.innerHTML = message;
+    output.appendChild(pre);
+}
+
